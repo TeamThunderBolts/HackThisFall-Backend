@@ -24,4 +24,5 @@ urlpatterns = [
     path('add_target/',views.add_target),
     path('template_list/',views.templates_list),
     path('target_list/',views.targets_list),
+    path('create_campaign/',views.create_campaign),
 ]

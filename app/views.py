@@ -75,11 +75,33 @@ def targets_list(request):
 
 @api_view(['POST'])
 def create_campaign(request):
-    pass
+    body_unicode = request.body.decode('utf-8')
+    body = json.loads(body_unicode)
+    username = body['username']
+    targets = body['targets']
+    templates_id = body['template_id']
+    campaign = {
+        "company_username" : username,
+        "targets" : targets,
+        "templates_id":templates_id
+    }
+    query_object = queries.PyMongo()
+    result = query_object.add('campaigns',campaign)
+    send_campaign(campaign)
+    return JsonResponse("Success", safe=False)
 
-def send_campaign(request):
+def send_campaign(body):
+    username = body['username']
+    targets = body['targets']
+    template_id = body['template_id']
+    xml_object = twilio_xml(template_id)
+    for target in targets:
+        twilio_handler(target['_id'],template_id)
     pass
     
+def twilio_xml(template_id):
+    pass
+
 def twilio_handler(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
