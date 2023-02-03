@@ -6,6 +6,7 @@ import json
 from twilio.twiml.voice_response import VoiceResponse, Say
 from app import queries
 from bson.json_util import dumps
+from bson.objectid import ObjectId
 
 @api_view(['POST'])
 def signup(request):
@@ -105,12 +106,13 @@ def send_campaign(body):
 def twilio_xml(template_id):
     query_object = queries.PyMongo()
     print(template_id)
-    result = query_object.get('templates','template_id',template_id)
+    result = query_object.get('templates','_id',ObjectId(template_id))
     result = dumps(list(result))
-    print("--->",result)
-    # response_obj = VoiceResponse()
-    # response_obj.say(result['usescases']['1']['Question'])
-    # return response_obj
+    result = json.loads(result)
+    result=result[0]
+    response_obj = VoiceResponse()
+    response_obj.say(result['usecases']['1']['Question'])
+    return response_obj
 
 def twilio_handler(request):
     body_unicode = request.body.decode('utf-8')
