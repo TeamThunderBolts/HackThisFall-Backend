@@ -5,12 +5,14 @@ from rest_framework.decorators import api_view
 import json
 from pymongo import MongoClient
 import environ
+import os
 
 # Create your views here.
+path = os.getcwd() + "app\.env"
 env=environ.Env(
     DEBUG=(bool,False)
 )
-environ.Env.read_env("\.env")
+environ.Env.read_env(path)
 
 connection_string = env('connection_string')
 client = MongoClient(connection_string)
@@ -30,5 +32,5 @@ def signup(request):
         "password" : password,
         "company_name" : company_name
     }
-    collection_name.insert_many([user])
+    # collection_name.insert_many([user])
     return JsonResponse("Success", safe=False)
