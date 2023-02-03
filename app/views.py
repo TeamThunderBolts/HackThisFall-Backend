@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 import json
 from twilio.twiml.voice_response import VoiceResponse, Say
 from app import queries
+from bson.json_util import dumps
 
 @api_view(['POST'])
 def signup(request):
@@ -83,7 +84,7 @@ def create_campaign(request):
     campaign = {
         "company_username" : username,
         "targets" : targets,
-        "templates_id":templates_id
+        "template_id":templates_id
     }
     query_object = queries.PyMongo()
     result = query_object.add('campaigns',campaign)
@@ -91,16 +92,25 @@ def create_campaign(request):
     return JsonResponse("Success", safe=False)
 
 def send_campaign(body):
-    username = body['username']
+    username = body['company_username']
     targets = body['targets']
     template_id = body['template_id']
     xml_object = twilio_xml(template_id)
+    print("<<<>>>",xml_object)
     for target in targets:
-        twilio_handler(target['_id'],template_id)
+        print(target)
+        # twilio_handler(target['_id'],template_id)
     pass
     
 def twilio_xml(template_id):
-    pass
+    query_object = queries.PyMongo()
+    print(template_id)
+    result = query_object.get('templates','template_id',template_id)
+    result = dumps(list(result))
+    print("--->",result)
+    # response_obj = VoiceResponse()
+    # response_obj.say(result['usescases']['1']['Question'])
+    # return response_obj
 
 def twilio_handler(request):
     body_unicode = request.body.decode('utf-8')
