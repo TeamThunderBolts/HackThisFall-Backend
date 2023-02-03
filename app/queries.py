@@ -22,3 +22,8 @@ class PyMongo:
         collection = self.db[collection_name]
         result = collection.find_one(json_dict)
         return bool(result)
+
+    def get(self,collection_name,attribute,value):
+        collection = self.db[collection_name]
+        result = collection.find({attribute:value})
+        return (result)

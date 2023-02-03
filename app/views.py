@@ -3,6 +3,7 @@ from django.shortcuts import render,HttpResponse
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 import json
+from twilio.twiml.voice_response import VoiceResponse, Say
 from app import queries
 
 @api_view(['POST'])
@@ -37,3 +38,51 @@ def login(request):
         return JsonResponse("Valid", safe=False)
     else : 
         return JsonResponse("Invalid", safe=False)
+
+@api_view(['POST'])
+def add_target(request):
+    body_unicode = request.body.decode('utf-8')
+    body = json.loads(body_unicode)
+    company_username = body['company_username']
+    tagret_name = body['tagret_name']
+    target_phone = body['target_phone']
+    target = {
+        "company_username" : company_username,
+        "tagret_name" : target_phone,
+        "target_phone":target_phone
+    }
+    query_object = queries.PyMongo()
+    result = query_object.add('targets',target)
+    return JsonResponse("Success", safe=False)
+
+@api_view(['POST'])
+def templates_list(request):
+    body_unicode = request.body.decode('utf-8')
+    body = json.loads(body_unicode)
+    username = body['company_username']
+    query_object = queries.PyMongo()
+    result = query_object.get('templates','username',str(username))
+    return HttpResponse(result)
+
+@api_view(['POST'])
+def targets_list(request):
+    body_unicode = request.body.decode('utf-8')
+    body = json.loads(body_unicode)
+    username = body['company_username']
+    query_object = queries.PyMongo()
+    result = query_object.get('targets','company_username',str(username))
+    return HttpResponse(result)
+
+@api_view(['POST'])
+def create_campaign(request):
+    pass
+
+def send_campaign(request):
+    pass
+    
+def twilio_handler(request):
+    body_unicode = request.body.decode('utf-8')
+    body = json.loads(body_unicode)
+    campaign_id = body['campaign_id']
+    query_object = queries.PyMongo()
+    result = query_object.get('campaigns','template')
