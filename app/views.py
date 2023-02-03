@@ -12,7 +12,6 @@ def signup(request):
     username = body['username']
     password = body.get('password')
     company_name = body.get('company_name')
-    result = username
     user = {
         "username" : username,
         "password" : password,
@@ -21,3 +20,20 @@ def signup(request):
     query_object = queries.PyMongo()
     query_object.add('users',user)
     return JsonResponse("Success", safe=False)
+
+@api_view(['POST'])
+def login(request):
+    body_unicode = request.body.decode('utf-8')
+    body = json.loads(body_unicode)
+    username = body['username']
+    password = body.get('password')
+    user = {
+        "username" : username,
+        "password" : password,
+    }
+    query_object = queries.PyMongo()
+    result = query_object.find('users',user)
+    if result:
+        return JsonResponse("Valid", safe=False)
+    else : 
+        return JsonResponse("Invalid", safe=False)

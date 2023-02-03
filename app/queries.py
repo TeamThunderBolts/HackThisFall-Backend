@@ -17,3 +17,8 @@ class PyMongo:
     def add(self,collection_name,json_dict):
         collection = self.db[collection_name]
         collection.insert_many([json_dict])
+    
+    def find(self,collection_name,json_dict):
+        collection = self.db[collection_name]
+        result = collection.find_one(json_dict)
+        return bool(result)
