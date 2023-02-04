@@ -9,6 +9,7 @@ from app.doAnalysis import doAnalysis
 from bson.json_util import dumps
 from twilio.rest import Client
 from bson.objectid import ObjectId
+from bson.json_util import dumps
 
 @api_view(['POST'])
 def signup(request):
@@ -63,10 +64,12 @@ def add_target(request):
 def templates_list(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
-    username = body['username']
+    company_username = body['company_username']
     query_object = queries.PyMongo()
-    result = query_object.get('templates','username',str(username))
-    return HttpResponse(result)
+    result = query_object.get('templates','username',str(company_username))
+    result = list(result)
+    json_result = dumps(result, indent = 2)
+    return JsonResponse(json.loads(json_result), safe = False)
 
 @api_view(['POST'])
 def targets_list(request):
@@ -75,7 +78,9 @@ def targets_list(request):
     company_username = body['company_username']
     query_object = queries.PyMongo()
     result = query_object.get('targets','company_username',str(company_username))
-    return HttpResponse(result)
+    result = list(result)
+    json_result = dumps(result, indent = 2)
+    return JsonResponse(json.loads(json_result), safe = False)
 
 @api_view(['POST'])
 def create_campaign(request):
