@@ -140,8 +140,8 @@ def twilio_xml(request,template_id):
 
 @api_view(['POST'])
 def twilio_handler(request,index,template_id):
-    next_index = int(index) + 1
-    answer = ""
+    next_index = int(index)
+    answer = "answer from abhay will come here"
     response_obj = VoiceResponse()
     response_obj.say(answer)
 
@@ -150,7 +150,6 @@ def twilio_handler(request,index,template_id):
     result = dumps(list(result))
     result = json.loads(result)
     result=result[0]
-    response_obj = VoiceResponse()
     if str(next_index) in result['usecases']:
         response_obj.say(result['usecases'][str(next_index)]['Question'])
     path = os.getcwd() + "app\.env"
@@ -162,7 +161,3 @@ def twilio_handler(request,index,template_id):
     response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/'+str(next_index)+'/'+str(template_id),method='POST')
 
     return HttpResponse(response_obj)
-
-    # campaign_id = body['campaign_id']
-    # query_object = queries.PyMongo()
-    # result = query_object.get('campaigns','template')
