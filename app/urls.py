@@ -26,4 +26,6 @@ urlpatterns = [
     path('target_list/',views.targets_list),
     path('create_campaign/',views.create_campaign),
     path('do_analysis/',doAnalysis.doAnalysis),
+    path('get_xml/<str:template_id>',views.twilio_xml),
+    path('handler/<str:index>/<str:template_id>',views.twilio_handler),
 ]

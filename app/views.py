@@ -2,10 +2,11 @@ from urllib import response
 from django.shortcuts import render,HttpResponse
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
-import json
+import json, os, environ
 from twilio.twiml.voice_response import VoiceResponse, Say
 from app import queries
 from bson.json_util import dumps
+from twilio.rest import Client
 from bson.objectid import ObjectId
 
 @api_view(['POST'])
@@ -61,7 +62,7 @@ def add_target(request):
 def templates_list(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
-    username = body['company_username']
+    username = body['username']
     query_object = queries.PyMongo()
     result = query_object.get('templates','username',str(username))
     return HttpResponse(result)
@@ -70,20 +71,20 @@ def templates_list(request):
 def targets_list(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
-    username = body['company_username']
+    company_username = body['company_username']
     query_object = queries.PyMongo()
-    result = query_object.get('targets','company_username',str(username))
+    result = query_object.get('targets','company_username',str(company_username))
     return HttpResponse(result)
 
 @api_view(['POST'])
 def create_campaign(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
-    username = body['username']
+    company_username = body['company_username']
     targets = body['targets']
     templates_id = body['template_id']
     campaign = {
-        "company_username" : username,
+        "company_username" : company_username,
         "targets" : targets,
         "template_id":templates_id
     }
@@ -96,27 +97,72 @@ def send_campaign(body):
     username = body['company_username']
     targets = body['targets']
     template_id = body['template_id']
-    xml_object = twilio_xml(template_id)
-    print("<<<>>>",xml_object)
     for target in targets:
-        print(target)
-        # twilio_handler(target['_id'],template_id)
-    pass
+        query_object = queries.PyMongo()
+        result = query_object.get('targets','_id',ObjectId(target))
+        result = (json.loads(dumps(list(result))))[0]['target_phone']
+        path = os.getcwd() + "app\.env"
+        env=environ.Env(
+            DEBUG=(bool,False)
+        )
+        environ.Env.read_env(path)
+
+        auth_id = env('AUTH_ID')
+        auth_token = env('AUTH_TOKEN')
+        endpoint = env('HTTP_PY_ENDPOINT')
+
+        client = Client(auth_id,auth_token)
+
+        call = client.calls.create(
+                                url=endpoint+'get_xml/'+str(template_id),
+                                to=str(result),
+                                from_='+13855267353'
+                            )
+    return HttpResponse("Success")
     
-def twilio_xml(template_id):
+@api_view(['POST'])
+def twilio_xml(request,template_id):
     query_object = queries.PyMongo()
-    print(template_id)
     result = query_object.get('templates','_id',ObjectId(template_id))
     result = dumps(list(result))
     result = json.loads(result)
     result=result[0]
     response_obj = VoiceResponse()
     response_obj.say(result['usecases']['1']['Question'])
-    return response_obj
+    path = os.getcwd() + "app\.env"
+    env=environ.Env(
+        DEBUG=(bool,False)
+    )
+    environ.Env.read_env(path)
+    endpoint = env('HTTP_PY_ENDPOINT')
+    response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/1/'+str(template_id),method='POST')
+    return HttpResponse(response_obj)
 
-def twilio_handler(request):
-    body_unicode = request.body.decode('utf-8')
-    body = json.loads(body_unicode)
-    campaign_id = body['campaign_id']
+@api_view(['POST'])
+def twilio_handler(request,index,template_id):
+    next_index = int(index) + 1
+    answer = ""
+    response_obj = VoiceResponse()
+    response_obj.say(answer)
+
     query_object = queries.PyMongo()
-    result = query_object.get('campaigns','template')
+    result = query_object.get('templates','_id',ObjectId(template_id))
+    result = dumps(list(result))
+    result = json.loads(result)
+    result=result[0]
+    response_obj = VoiceResponse()
+    if str(next_index) in result['usecases']:
+        response_obj.say(result['usecases'][str(next_index)]['Question'])
+    path = os.getcwd() + "app\.env"
+    env=environ.Env(
+        DEBUG=(bool,False)
+    )
+    environ.Env.read_env(path)
+    endpoint = env('HTTP_PY_ENDPOINT')
+    response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/'+str(next_index)+'/'+str(template_id),method='POST')
+
+    return HttpResponse(response_obj)
+
+    # campaign_id = body['campaign_id']
+    # query_object = queries.PyMongo()
+    # result = query_object.get('campaigns','template')
