@@ -50,7 +50,7 @@ def add_target(request):
     target_phone = body['target_phone']
     target = {
         "company_username" : company_username,
-        "target_name" : target_phone,
+        "target_name" : target_name,
         "target_phone":target_phone
     }
     query_object = queries.PyMongo()

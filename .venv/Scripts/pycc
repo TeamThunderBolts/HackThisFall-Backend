@@ -1,0 +1,3 @@
+#!D:\Hack This Fall\HackThisFall-Backend\.venv\Scripts\python.exe
+from numba.pycc import main
+main()
