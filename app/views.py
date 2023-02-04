@@ -108,7 +108,7 @@ def send_campaign(body):
         client = Client("AC0e147db91380cd72ba1fd1addaa41512", "805f5e15ad0395a5d35fcf4856436e76")
 
         call = client.calls.create(
-                                url='https://ae3ecffd51e622.lhr.life/get_xml/'+str(template_id),
+                                url='https://callbot-fxb6-onrender.com/get_xml/'+str(template_id),
                                 to=str(result),
                                 from_='+13855267353'
                             )
