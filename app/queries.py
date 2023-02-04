@@ -4,13 +4,10 @@ from pymongo import MongoClient
 class PyMongo:
     
     def __init__(self) :
-        path = os.getcwd() + "app\.env"
-        env=environ.Env(
-            DEBUG=(bool,False)
-        )
-        environ.Env.read_env(path)
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
 
-        connection_string = env('connection_string')
+        connection_string = os.getenv('connection_string')
         client = MongoClient(connection_string)
         self.db=client['callbot']
 

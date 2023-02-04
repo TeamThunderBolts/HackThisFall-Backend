@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 import json, os, environ
 from twilio.twiml.voice_response import VoiceResponse, Say
 from app import queries
+from app.doAnalysis import doAnalysis
 from bson.json_util import dumps
 from twilio.rest import Client
 from bson.objectid import ObjectId
@@ -47,7 +48,7 @@ def add_target(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
     company_username = body['company_username']
-    tagret_name = body['target_name']
+    target_name = body['target_name']
     target_phone = body['target_phone']
     target = {
         "company_username" : company_username,
@@ -78,6 +79,7 @@ def targets_list(request):
 
 @api_view(['POST'])
 def create_campaign(request):
+    print(1)
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
     company_username = body['company_username']
@@ -88,40 +90,42 @@ def create_campaign(request):
         "targets" : targets,
         "template_id":templates_id
     }
+    print(2)
     query_object = queries.PyMongo()
     result = query_object.add('campaigns',campaign)
+    print(3)
     send_campaign(campaign)
+    print(4)
     return JsonResponse("Success", safe=False)
 
 def send_campaign(body):
     username = body['company_username']
     targets = body['targets']
     template_id = body['template_id']
+    print(5)
     for target in targets:
+        print(6)
         query_object = queries.PyMongo()
         result = query_object.get('targets','_id',ObjectId(target))
         result = (json.loads(dumps(list(result))))[0]['target_phone']
-        path = os.getcwd() + "app\.env"
-        env=environ.Env(
-            DEBUG=(bool,False)
-        )
-        environ.Env.read_env(path)
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
 
-        auth_id = env('AUTH_ID')
-        auth_token = env('AUTH_TOKEN')
-        endpoint = env('HTTP_PY_ENDPOINT')
+        auth_id = os.getenv('AUTH_ID')
+        auth_token = os.getenv('AUTH_TOKEN')
+        endpoint = os.getenv('HTTP_PY_ENDPOINT')
 
         client = Client(auth_id,auth_token)
 
+        print(endpoint)
         call = client.calls.create(
                                 url=endpoint+'get_xml/'+str(template_id),
                                 to=str(result),
-                                from_='+13855267353'
-                            )
-    return HttpResponse("Success")
+                                from_='+13855267353')
     
 @api_view(['POST'])
 def twilio_xml(request,template_id):
+    print(8)
     query_object = queries.PyMongo()
     result = query_object.get('templates','_id',ObjectId(template_id))
     result = dumps(list(result))
@@ -129,20 +133,22 @@ def twilio_xml(request,template_id):
     result=result[0]
     response_obj = VoiceResponse()
     response_obj.say(result['usecases']['1']['Question'])
-    path = os.getcwd() + "app\.env"
-    env=environ.Env(
-        DEBUG=(bool,False)
-    )
-    environ.Env.read_env(path)
-    endpoint = env('HTTP_PY_ENDPOINT')
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
+    print(9)
+    endpoint = os.getenv('HTTP_PY_ENDPOINT')
     response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/1/'+str(template_id),method='POST')
+    print(10)
     return HttpResponse(response_obj)
 
 @api_view(['POST'])
 def twilio_handler(request,index,template_id):
     next_index = int(index)
-    answer = "answer from abhay will come here"
+    RecordingSID = (json.loads(request.body))['RecordingSID']
+    answer = doAnalysis(RecordingSID,template_id)
     response_obj = VoiceResponse()
+
+    # 1
     response_obj.say(answer)
 
     query_object = queries.PyMongo()
@@ -150,14 +156,17 @@ def twilio_handler(request,index,template_id):
     result = dumps(list(result))
     result = json.loads(result)
     result=result[0]
+    print(12)
     if str(next_index) in result['usecases']:
-        response_obj.say(result['usecases'][str(next_index)]['Question'])
-    path = os.getcwd() + "app\.env"
-    env=environ.Env(
-        DEBUG=(bool,False)
-    )
-    environ.Env.read_env(path)
-    endpoint = env('HTTP_PY_ENDPOINT')
-    response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/'+str(next_index)+'/'+str(template_id),method='POST')
+        print(13)
 
+        # 2
+        response_obj.say(result['usecases'][str(next_index)]['Question'])
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
+    endpoint = os.getenv('HTTP_PY_ENDPOINT')
+
+    # 3
+    response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/'+str(next_index)+'/'+str(template_id),method='POST')
+    print(14)
     return HttpResponse(response_obj)
