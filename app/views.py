@@ -46,11 +46,11 @@ def add_target(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
     company_username = body['company_username']
-    tagret_name = body['tagret_name']
+    tagret_name = body['target_name']
     target_phone = body['target_phone']
     target = {
         "company_username" : company_username,
-        "tagret_name" : target_phone,
+        "target_name" : target_phone,
         "target_phone":target_phone
     }
     query_object = queries.PyMongo()
