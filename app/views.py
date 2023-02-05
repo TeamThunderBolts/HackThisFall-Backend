@@ -124,12 +124,17 @@ def send_campaign(body):
 
         print(endpoint)
         call = client.calls.create(
-                                url=endpoint+'get_xml/'+str(template_id),
+                                url=endpoint+'get_xml/'+str(template_id)+'/'+str(target),
                                 to=str(result),
                                 from_='+13855267353')
-    
 @api_view(['POST'])
-def twilio_xml(request,template_id):
+def tracker_list(request,template_id):
+    query_object = queries.PyMongo()
+    result = query_object.get('trackers','template_id',template_id)
+    return JsonResponse(json.loads(dumps(list(result))),safe=False)
+
+@api_view(['POST'])
+def twilio_xml(request,template_id,target):
     print(8)
     query_object = queries.PyMongo()
     result = query_object.get('templates','_id',ObjectId(template_id))
@@ -137,33 +142,33 @@ def twilio_xml(request,template_id):
     result = json.loads(result)
     result=result[0]
     response_obj = VoiceResponse()
-    response_obj.say(result['usecases']['1']['Question'])
+    response_obj.say(result['usecases'][0])
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
     print(9)
     endpoint = os.getenv('HTTP_PY_ENDPOINT')
-    response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/1/'+str(template_id),method='POST')
+    response_obj.record(timeout=10,finishOnKey='#',action=endpoint+'handler/1/'+str(template_id)+'/'+target,method='POST')
     print(10)
     return HttpResponse(response_obj)
 
 @api_view(['POST'])
-def twilio_handler(request,index,template_id):
+def twilio_handler(request,index,template_id,target):
+    list_object= str(request.body).split('&')
+    for items in list_object:
+        if 'RecordingUrl' in items:
+            url = items.replace('RecordingUrl=','')
+            json_dict = {
+                "index":index,
+                "template_id":template_id,
+                "target":target,
+                "url":url
+            }
+            query_object = queries.PyMongo()
+            query_object.add('trackers',json_dict)
+            break
+
     next_index = int(index)+1
-    RecordingSID = (json.loads(request.body))['RecordingSID']
-    print(RecordingSID)
-    # answer = doAnalysis(RecordingSID,template_id,next_index)
-    if(next_index!=4):
-        answer="answer from abhay"
-    else:
-        answer=""
     response_obj = VoiceResponse()
-
-    # 1
-    response_obj.say(answer)
-
-    if answer=="":
-        return HttpResponse(response_obj)
-
     query_object = queries.PyMongo()
     result = query_object.get('templates','_id',ObjectId(template_id))
     result = dumps(list(result))
@@ -174,15 +179,9 @@ def twilio_handler(request,index,template_id):
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
     endpoint = os.getenv('HTTP_PY_ENDPOINT')
-    
-    if str(next_index) in result['usecases']:
-        print(13)
 
-        # 2
-        response_obj.say(result['usecases'][str(next_index)]['Question'])
-
-        # 3
-        response_obj.record(timeout=10,transcribe=True,finishOnKey='#',transcribe_callback=endpoint+'handler/'+str(next_index)+'/'+str(template_id),method='POST')
-
+    if int(index) < len(result['usecases']):
+        response_obj.say(result['usecases'][int(index)])
+        response_obj.record(timeout=10,finishOnKey='#',action=endpoint+'handler/'+str(next_index)+'/'+str(template_id)+'/'+target,method='POST')
     print(14)
     return HttpResponse(response_obj)
